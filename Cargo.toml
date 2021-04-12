@@ -1,0 +1,21 @@
+[package]
+name = "tokio-sando"
+description = "A simple proxy server implementation"
+version = "0.1.0"
+authors = ["Chun-Min Chang <chun.m.chang@gmail.com>"]
+license = "MIT"
+repository = "https://github.com/ChunMinChang/tokio-sando"
+keywords = ["http", "https", "tunnel", "proxy", "connect"]
+categories = ["web-programming::http-server", "network-programming"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+argh = "0.1"
+regex = "1"
+tokio = { version = "1.0", features = [ "full" ] }
+tokio-native-tls = "0.3"
+
+[dev-dependencies]
+tokio-test = "0.4"
