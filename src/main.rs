@@ -101,10 +101,10 @@ async fn handle_connection(
     destination_pattern: Regex,
 ) -> io::Result<ConnectionResult> {
     let client_addr = tcp_stream.peer_addr()?;
-    let handshake = tls_acceptor.accept(tcp_stream);
-    let mut tls_stream = handshake
+    let mut tls_stream = tls_acceptor
+        .accept(tcp_stream)
         .await
-        .map_err(|e| io::Error::new(io::ErrorKind::ConnectionRefused, e))?;
+        .map_err(|error| io::Error::new(io::ErrorKind::ConnectionRefused, error))?;
     let req = request_handler::get_request(&mut tls_stream).await?;
     match req.method.name.as_str() {
         "CONNECT" => {
