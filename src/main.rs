@@ -15,7 +15,7 @@ use tokio_native_tls::{native_tls, TlsStream};
 use tunnel::{Tunnel, TunnelStats};
 
 #[derive(FromArgs)]
-#[argh(description = "HTTPS server settings")]
+#[argh(description = "Sample HTTPS proxy server")]
 struct Options {
     #[argh(positional)]
     addr: String,

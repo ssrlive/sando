@@ -1,5 +1,5 @@
 [package]
-name = "tokio-sando"
+name = "sando"
 description = "A simple proxy server implementation"
 version = "0.1.0"
 authors = ["Chun-Min Chang <chun.m.chang@gmail.com>"]
