@@ -55,13 +55,13 @@ async fn main() -> io::Result<()> {
 
     loop {
         let (stream, peer_addr) = tcp_listener.accept().await?;
-        println!("Connection from: {peer_addr}");
+        println!("Connection from {peer_addr}");
         let acceptor = tls_acceptor.clone();
         let pattern = destination_pattern.clone();
         tokio::spawn(async move {
             match handle_connection(acceptor, stream, pattern).await {
                 Err(e) => {
-                    println!("Error: {:?}", e);
+                    println!("Error: {e}");
                 }
                 Ok(ConnectionResult::InvalidRequest(method)) => {
                     println!("{method} is not support");
