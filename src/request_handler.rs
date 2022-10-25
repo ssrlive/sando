@@ -1,13 +1,13 @@
 use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct ClientRequest {
     pub method: ConnectMethod,
     header: Vec<String>,
     data_block: Vec<String>,
 }
 
-#[derive(Debug, Default, PartialEq)]
+#[derive(Debug, Default, PartialEq, Eq)]
 pub struct ConnectMethod {
     pub name: String,
     pub uri: String,

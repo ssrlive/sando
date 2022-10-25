@@ -55,7 +55,7 @@ async fn main() -> io::Result<()> {
 
     loop {
         let (stream, peer_addr) = tcp_listener.accept().await?;
-        println!("Connection from: {}", peer_addr);
+        println!("Connection from: {peer_addr}");
         let acceptor = tls_acceptor.clone();
         let pattern = destination_pattern.clone();
         tokio::spawn(async move {
@@ -64,27 +64,21 @@ async fn main() -> io::Result<()> {
                     println!("Error: {:?}", e);
                 }
                 Ok(ConnectionResult::InvalidRequest(method)) => {
-                    println!("{} is not support", method);
+                    println!("{method} is not support");
                 }
                 Ok(ConnectionResult::Connect(ConnectResult::InvalidDestination(dest))) => {
-                    println!("{} is not a allowed destination", dest);
+                    println!("{dest} is not a allowed destination");
                 }
                 Ok(ConnectionResult::Connect(ConnectResult::Success(client, dest, stats))) => {
                     assert_eq!(peer_addr, client);
                     println!(
-                        "{} <-> Proxy <-> {}:\n\t{} -> {}: {} bytes\n\t{} -> {}: {} bytes",
-                        client,
-                        dest,
-                        client,
-                        dest,
+                        "{client} <-> Proxy <-> {dest}:\n\t{client} -> {dest}: {} bytes\n\t{client} <- {dest}: {} bytes",
                         stats.client_to_dest,
-                        dest,
-                        client,
                         stats.dest_to_client
                     );
                 }
             }
-            println!("Connection from {} is ended", peer_addr);
+            println!("Connection from {peer_addr} is ended");
         });
     }
 }
@@ -162,7 +156,7 @@ async fn process_connect_request(
     let dest = TcpStream::connect(dest_addr).await?;
     request_handler::send_response(&mut client, ServerResponse::Ok).await?;
     let mut tunnel = Tunnel::new(client_name, client, dest_name, dest);
-    Ok(tunnel.start().await?)
+    tunnel.start().await
 }
 
 async fn end_invalid_request(
