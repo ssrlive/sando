@@ -35,7 +35,7 @@ where
         let upstream_task =
             tokio::spawn(async move { Self::relay(&upstream_name, client_recv, dest_send).await });
 
-        let downstream_name = format!("{} -> {}", self.dest_name, self.client_name);
+        let downstream_name = format!("{} <- {}", self.client_name, self.dest_name);
         let downstream_task =
             tokio::spawn(
                 async move { Self::relay(&downstream_name, dest_recv, client_send).await },
