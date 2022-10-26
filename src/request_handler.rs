@@ -1,4 +1,4 @@
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 
 #[derive(Debug, Default, PartialEq, Eq)]
 pub struct ClientRequest {
@@ -36,7 +36,7 @@ pub enum ServerResponse {
 pub async fn send_response<W: AsyncWriteExt + Unpin>(
     mut writer: W,
     response: ServerResponse,
-) -> io::Result<()> {
+) -> anyhow::Result<()> {
     let (code, message) = match response {
         ServerResponse::BadRequest => (400, "Bad Request"),
         ServerResponse::Forbidden => (403, "Forbidden"),
@@ -44,25 +44,27 @@ pub async fn send_response<W: AsyncWriteExt + Unpin>(
         ServerResponse::Ok => (200, "OK"),
     };
     let message = format!("HTTP/1.1 {} {}\r\n\r\n", code as u32, message);
-    writer.write_all(&message.into_bytes()).await
+    writer
+        .write_all(&message.into_bytes())
+        .await
+        .map_err(|e| anyhow::anyhow!(e))
 }
 
 // Support "CONNECT" [1, 2] only.
 // [1] https://developer.mozilla.org/en-US/docs/Web/HTTP/Methods/CONNECT
 // [2] https://tools.ietf.org/html/rfc2817#section-5.2
-pub async fn get_request<R: AsyncReadExt + Unpin>(mut reader: R) -> io::Result<ClientRequest> {
+pub async fn get_request<R: AsyncReadExt + Unpin>(mut reader: R) -> anyhow::Result<ClientRequest> {
     // A reasonable HTTP header size for CONNECT
     const MAX_REQUEST_SIZE: usize = 1024;
     let mut buf = [0; MAX_REQUEST_SIZE];
     let len = reader.read(&mut buf).await?;
-    let request = std::str::from_utf8(&buf[..len])
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?;
+    let request = std::str::from_utf8(&buf[..len]).map_err(|e| anyhow::anyhow!(e))?;
     parse_request(request)
 }
 
 // Parse a typically HTTP client request. Works for "CONNECT" only now.
 // [1]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Session#sending_a_client_request
-fn parse_request(request: &str) -> io::Result<ClientRequest> {
+fn parse_request(request: &str) -> anyhow::Result<ClientRequest> {
     #[derive(PartialEq)]
     enum ParseState {
         Method,
@@ -110,27 +112,21 @@ fn parse_request(request: &str) -> io::Result<ClientRequest> {
     if state == ParseState::DataBlock {
         Ok(parsed)
     } else {
-        Err(io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "Invalid request",
-        ))
+        Err(anyhow::anyhow!("Invalid request"))
     }
 }
 
-fn parse_method(method: &str) -> io::Result<ConnectMethod> {
+fn parse_method(method: &str) -> anyhow::Result<ConnectMethod> {
     let mut items = method.split(' ');
-    let name = items.next().ok_or_else(|| {
-        io::Error::new(io::ErrorKind::InvalidInput, "No method in client request")
-    })?;
+    let name = items
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("No method in client request"))?;
     let uri = items
         .next()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::InvalidInput, "No URI in client request"))?;
-    let version = items.next().ok_or_else(|| {
-        io::Error::new(
-            io::ErrorKind::InvalidInput,
-            "No HTTP protocol version in client request",
-        )
-    })?;
+        .ok_or_else(|| anyhow::anyhow!("No URI in client request"))?;
+    let version = items
+        .next()
+        .ok_or_else(|| anyhow::anyhow!("No HTTP protocol version in client request"))?;
     Ok(ConnectMethod::new(name, uri, version))
 }
 

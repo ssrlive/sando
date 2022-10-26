@@ -26,7 +26,7 @@ where
         }
     }
 
-    pub async fn start(&mut self) -> io::Result<TunnelStats> {
+    pub async fn start(&mut self) -> anyhow::Result<TunnelStats> {
         let (client, dest) = self.client_dest.take().unwrap();
         let (client_recv, client_send) = io::split(client);
         let (dest_recv, dest_send) = io::split(dest);
@@ -55,7 +55,7 @@ where
         name: &str,
         mut source: ReadHalf<R>,
         mut destination: WriteHalf<W>,
-    ) -> io::Result<usize> {
+    ) -> anyhow::Result<usize> {
         const BUFFER_SIZE: usize = 16 * 1024;
         let mut buffer = [0; BUFFER_SIZE];
         let mut total = 0;

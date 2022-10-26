@@ -16,6 +16,7 @@ argh = "0.1.9"
 regex = "1.6.0"
 tokio = { version = "1.21.2", features = [ "full" ] }
 tokio-native-tls = "0.3.0"
+anyhow = "1.0.66"
 
 [dev-dependencies]
 tokio-test = "0.4.2"

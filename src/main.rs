@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::net::{SocketAddr, ToSocketAddrs};
 use std::path::{Path, PathBuf};
-use tokio::io::{self, AsyncWriteExt};
+use tokio::io::AsyncWriteExt;
 use tokio::net::{TcpListener, TcpStream};
 use tokio_native_tls::TlsAcceptor;
 use tokio_native_tls::{native_tls, TlsStream};
@@ -34,21 +34,21 @@ struct Options {
 }
 
 #[tokio::main]
-async fn main() -> io::Result<()> {
+async fn main() -> anyhow::Result<()> {
     let options: Options = argh::from_env();
     let addr = options
         .addr
         .to_socket_addrs()?
         .next()
-        .ok_or_else(|| io::Error::from(io::ErrorKind::InvalidInput))?;
-    let destination_pattern = Regex::new(&options.destination_pattern)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))?;
+        .ok_or_else(|| anyhow::anyhow!("InvalidInput"))?;
+    let destination_pattern =
+        Regex::new(&options.destination_pattern).map_err(|e| anyhow::anyhow!(e))?;
     let identity = load_identity(&options.pkcs12, &options.password)?;
 
     let tls_acceptor = tokio_native_tls::TlsAcceptor::from(
         native_tls::TlsAcceptor::builder(identity)
             .build()
-            .map_err(|e| io::Error::new(io::ErrorKind::InvalidData, e))?,
+            .map_err(|e| anyhow::anyhow!(e))?,
     );
 
     let tcp_listener = TcpListener::bind(&addr).await?;
@@ -99,12 +99,12 @@ async fn handle_connection(
     tls_acceptor: TlsAcceptor,
     tcp_stream: TcpStream,
     destination_pattern: Regex,
-) -> io::Result<ConnectionResult> {
+) -> anyhow::Result<ConnectionResult> {
     let client_addr = tcp_stream.peer_addr()?;
     let mut tls_stream = tls_acceptor
         .accept(tcp_stream)
         .await
-        .map_err(|error| io::Error::new(io::ErrorKind::ConnectionRefused, error))?;
+        .map_err(|error| anyhow::anyhow!(error))?;
     let req = request_handler::get_request(&mut tls_stream).await?;
     match req.method.name.as_str() {
         "CONNECT" => {
@@ -129,7 +129,7 @@ async fn handle_connect_request(
     client_addr: SocketAddr,
     destination_uri: String,
     destination_pattern: Regex,
-) -> io::Result<ConnectResult> {
+) -> anyhow::Result<ConnectResult> {
     match destination_uri.to_socket_addrs()?.next() {
         None => {
             end_invalid_request(client, ServerResponse::BadRequest).await?;
@@ -150,7 +150,7 @@ async fn process_connect_request(
     mut client: TlsStream<TcpStream>,
     client_addr: SocketAddr,
     dest_addr: SocketAddr,
-) -> io::Result<TunnelStats> {
+) -> anyhow::Result<TunnelStats> {
     let client_name = format!("{}", client_addr);
     let dest_name = format!("{}", dest_addr);
     let dest = TcpStream::connect(dest_addr).await?;
@@ -162,16 +162,15 @@ async fn process_connect_request(
 async fn end_invalid_request(
     mut client: TlsStream<TcpStream>,
     res: ServerResponse,
-) -> io::Result<()> {
+) -> anyhow::Result<()> {
     request_handler::send_response(&mut client, res).await?;
     client.shutdown().await?;
     Ok(())
 }
 
-fn load_identity(path: &Path, password: &str) -> io::Result<native_tls::Identity> {
+fn load_identity(path: &Path, password: &str) -> anyhow::Result<native_tls::Identity> {
     let mut file = File::open(path)?;
     let mut identity = vec![];
     file.read_to_end(&mut identity)?;
-    native_tls::Identity::from_pkcs12(&identity, password)
-        .map_err(|e| io::Error::new(io::ErrorKind::InvalidInput, e))
+    native_tls::Identity::from_pkcs12(&identity, password).map_err(|e| anyhow::anyhow!(e))
 }
